@@ -107,7 +107,6 @@ const TECHS = [
     ]
   }
 ];
-
 const JOBS = [
   { id: 1, customer: 'Johnson Residence', address: '8423 Gateway Blvd', type: 'Emergency', tech: 'Mike Rodriguez', status: 'in-progress', value: 485, time: '10:30 AM' },
   { id: 2, customer: 'Downtown Office', address: '10234 Jasper Ave', type: 'Maintenance', tech: 'Danny Chen', status: 'in-progress', value: 350, time: '9:00 AM' },
