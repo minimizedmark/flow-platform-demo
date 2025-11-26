@@ -203,3 +203,613 @@ export default function FlowPlatformDemo() {
       </div>
     </div>
   );
+  const DashboardView = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-400">Today's Revenue</span>
+            <DollarSign className="w-5 h-5 text-green-400" />
+          </div>
+          <div className="text-3xl font-bold text-white">${revenue.toLocaleString()}</div>
+          <div className="text-sm text-green-400 mt-1">+12.5% from yesterday</div>
+        </div>
+
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-400">Active Jobs</span>
+            <Activity className="w-5 h-5 text-blue-400" />
+          </div>
+          <div className="text-3xl font-bold text-white">8</div>
+          <div className="text-sm text-slate-400 mt-1">3 in progress, 5 scheduled</div>
+        </div>
+
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-400">Jobs Completed</span>
+            <CheckCircle className="w-5 h-5 text-purple-400" />
+          </div>
+          <div className="text-3xl font-bold text-white">12</div>
+          <div className="text-sm text-purple-400 mt-1">+3 since 9 AM</div>
+        </div>
+
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-400">GPS Updates</span>
+            <TrendingUp className="w-5 h-5 text-orange-400" />
+          </div>
+          <div className="text-3xl font-bold text-white">{updates}</div>
+          <div className="text-sm text-slate-400 mt-1">Every 3 seconds</div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Activity className="w-5 h-5 text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-white mb-2">AI Insight</h3>
+            <p className="text-slate-300 mb-3">
+              Found 8 customers due for seasonal maintenance. Automated reminders sent. 
+              3 already booked appointments. Potential revenue: <span className="text-green-400 font-semibold">$2,850</span>
+            </p>
+            <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">
+              View Details →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Technicians</h3>
+          <div className="space-y-3">
+            {TECHS.map(tech => (
+              <div key={tech.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: tech.color + '20' }}>
+                    <Truck className="w-5 h-5" style={{ color: tech.color }} />
+                  </div>
+                  <div>
+                    <div className="font-medium text-white">{tech.name}</div>
+                    <div className="text-xs text-slate-400">{tech.truck}</div>
+                  </div>
+                </div>
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tech.status)} text-white`}>
+                  {tech.status === 'en-route' ? 'En Route' : tech.status === 'on-site' ? 'On Site' : 'Available'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Today's Schedule</h3>
+          <div className="space-y-3">
+            {JOBS.slice(0, 5).map(job => (
+              <div key={job.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
+                <div className="flex-1">
+                  <div className="font-medium text-white">{job.customer}</div>
+                  <div className="text-xs text-slate-400">{job.address}</div>
+                  <div className="text-xs text-slate-500 mt-1">{job.time} • {job.tech}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-white">${job.value}</div>
+                  <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(job.status)} text-white mt-1`}>
+                    {job.status}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const GPSView = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-1 space-y-4">
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-4">
+          <h2 className="text-lg font-semibold text-white mb-4">Active Technicians</h2>
+          <div className="space-y-3">
+            {TECHS.map(tech => (
+              <div
+                key={tech.id}
+                onClick={() => setSelectedTech(tech.id)}
+                className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                  selectedTech === tech.id
+                    ? 'bg-slate-700/50 border-blue-500 shadow-lg'
+                    : 'bg-slate-800/30 border-slate-700 hover:bg-slate-700/30'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: tech.color + '20' }}>
+                      <Truck className="w-5 h-5" style={{ color: tech.color }} />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">{tech.name}</div>
+                      <div className="text-xs text-slate-400">{tech.truck}</div>
+                    </div>
+                  </div>
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tech.status)} text-white`}>
+                    {tech.status === 'en-route' ? 'En Route' : tech.status === 'on-site' ? 'On Site' : 'Available'}
+                  </div>
+                </div>
+                
+                {tech.customer && (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="text-slate-300">{tech.customer}</div>
+                        <div className="text-slate-500 text-xs">{tech.currentJob}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-slate-400" />
+                      <div className="text-sm text-slate-400">{tech.jobType}</div>
+                    </div>
+                    {tech.eta && tech.eta > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-blue-400" />
+                        <div className="text-sm text-blue-400 font-medium">ETA: {tech.eta} minutes</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="lg:col-span-2">
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6 h-[700px]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">Live Map - Edmonton, AB</h2>
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              Updates every 3 seconds
+            </div>
+          </div>
+          
+          <div className="relative w-full h-[600px] bg-slate-900 rounded-lg overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900"></div>
+            <div className="absolute inset-0 opacity-10">
+              <div className="grid grid-cols-12 grid-rows-12 h-full w-full">
+                {[...Array(144)].map((_, i) => (
+                  <div key={i} className="border border-slate-600"></div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="absolute top-4 left-4 bg-slate-800/80 backdrop-blur px-3 py-2 rounded-lg border border-slate-700">
+              <div className="text-sm font-semibold text-white">Edmonton, Alberta</div>
+              <div className="text-xs text-slate-400">Real-time tracking active</div>
+            </div>
+            
+            {TECHS.map((tech, idx) => {
+              const position = techPositions[tech.id] || 0;
+              const xPos = 15 + (idx * 15) + (position * 2);
+              const yPos = 20 + (idx * 8) + (position * 3);
+              
+              return (
+                <div
+                  key={tech.id}
+                  className={`absolute transition-all duration-3000 cursor-pointer ${selectedTech === tech.id ? 'z-20 scale-125' : 'z-10'}`}
+                  style={{ left: `${xPos}%`, top: `${yPos}%` }}
+                  onClick={() => setSelectedTech(tech.id)}
+                >
+                  <div className="relative">
+                    <div 
+                      className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg animate-pulse"
+                      style={{ backgroundColor: tech.color + '30', borderColor: tech.color, borderWidth: '2px' }}
+                    >
+                      <Truck className="w-6 h-6" style={{ color: tech.color }} />
+                    </div>
+                    
+                    {selectedTech === tech.id && (
+                      <div className="absolute top-14 left-1/2 -translate-x-1/2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-3 z-30">
+                        <div className="font-semibold text-white mb-1">{tech.name}</div>
+                        <div className="text-xs text-slate-400 mb-2">{tech.truck}</div>
+                        {tech.customer && (
+                          <>
+                            <div className="text-sm text-slate-300 mb-1">{tech.customer}</div>
+                            <div className="text-xs text-slate-500 mb-2">{tech.currentJob}</div>
+                            <div className="text-xs text-slate-400">{tech.jobType}</div>
+                            {tech.eta && tech.eta > 0 && (
+                              <div className="mt-2 pt-2 border-t border-slate-700">
+                                <div className="text-sm text-blue-400 font-medium">Arriving in {tech.eta} minutes</div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            
+            <div className="absolute bottom-4 right-4 bg-slate-800/80 backdrop-blur px-4 py-3 rounded-lg border border-slate-700">
+              <div className="text-xs font-semibold text-slate-400 mb-2">Status</div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="text-xs text-slate-300">En Route</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="text-xs text-slate-300">On Site</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                  <span className="text-xs text-slate-300">Available</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ScheduleView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Schedule</h2>
+        <button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
+          <Plus className="w-4 h-4" />
+          New Job
+        </button>
+      </div>
+
+      <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+        <div className="space-y-4">
+          {JOBS.map(job => (
+            <div key={job.id} className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition">
+              <div className="flex-shrink-0">
+                <div className="text-sm font-semibold text-slate-400">{job.time}</div>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-white mb-1">{job.customer}</div>
+                <div className="text-sm text-slate-400">{job.address}</div>
+                <div className="flex items-center gap-4 mt-2">
+                  <span className="text-xs text-slate-500">{job.type}</span>
+                  <span className="text-xs text-slate-500">•</span>
+                  <span className="text-xs text-slate-500">{job.tech}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="font-semibold text-white">${job.value}</div>
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)} text-white mt-1`}>
+                    {job.status}
+                  </div>
+                </div>
+                <button className="text-slate-400 hover:text-white">
+                  <Edit className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+            <Activity className="w-5 h-5 text-purple-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white mb-1">AI Scheduling Suggestion</h3>
+            <p className="text-slate-300 text-sm mb-3">
+              Reroute Mike Rodriguez to Smith Commercial (12045 104 St) instead. He's 8 minutes closer than Steve, 
+              and has Carrier certification needed for the job. Saves 15 minutes drive time.
+            </p>
+            <button className="text-purple-400 hover:text-purple-300 text-sm font-medium">
+              Apply Suggestion →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+ const InvoicesView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Invoices</h2>
+        <button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
+          <Plus className="w-4 h-4" />
+          Create Invoice
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="text-sm text-slate-400 mb-1">Total Outstanding</div>
+          <div className="text-3xl font-bold text-white">$2,130</div>
+          <div className="text-sm text-orange-400 mt-1">2 overdue</div>
+        </div>
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="text-sm text-slate-400 mb-1">Paid This Month</div>
+          <div className="text-3xl font-bold text-white">$42,850</div>
+          <div className="text-sm text-green-400 mt-1">+18% vs last month</div>
+        </div>
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="text-sm text-slate-400 mb-1">Avg Payment Time</div>
+          <div className="text-3xl font-bold text-white">8 days</div>
+          <div className="text-sm text-blue-400 mt-1">-2 days improvement</div>
+        </div>
+      </div>
+
+      <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+        <div className="space-y-4">
+          {INVOICES.map(invoice => (
+            <div key={invoice.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition">
+              <div className="flex items-center gap-4">
+                <FileText className="w-5 h-5 text-blue-400" />
+                <div>
+                  <div className="font-semibold text-white">{invoice.id}</div>
+                  <div className="text-sm text-slate-400">{invoice.customer}</div>
+                  <div className="text-xs text-slate-500 mt-1">{invoice.date}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="font-semibold text-white">${invoice.amount}</div>
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status)} text-white mt-1`}>
+                    {invoice.status}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="text-slate-400 hover:text-white">
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button className="text-slate-400 hover:text-white">
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/30 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+            <Activity className="w-5 h-5 text-green-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white mb-1">AI-Generated Invoice Ready</h3>
+            <p className="text-slate-300 text-sm mb-3">
+              From Mike's job notes: "Replaced failed 45µF capacitor on Carrier unit, tested operation, system cooling normally."
+              Auto-generated invoice with parts ($45) + labor ($135) = $180 + tax. Ready to send.
+            </p>
+            <div className="flex gap-3">
+              <button className="text-green-400 hover:text-green-300 text-sm font-medium">
+                Review & Send →
+              </button>
+              <button className="text-slate-400 hover:text-slate-300 text-sm font-medium">
+                Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const RefrigerantView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Refrigerant Tracking</h2>
+        <button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
+          <Download className="w-4 h-4" />
+          EPA Report
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {REFRIGERANTS.map(ref => (
+          <div key={ref.type} className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Droplets className={`w-5 h-5 ${ref.stock < ref.low_threshold ? 'text-red-400' : 'text-blue-400'}`} />
+                <h3 className="font-semibold text-white">{ref.type}</h3>
+              </div>
+              {ref.stock < ref.low_threshold && (
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              )}
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <div className="text-sm text-slate-400">Current Stock</div>
+                <div className="text-2xl font-bold text-white">{ref.stock} {ref.unit}</div>
+              </div>
+              
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Used Today</span>
+                <span className="text-white font-medium">{ref.used_today} {ref.unit}</span>
+              </div>
+              
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Cost/lb</span>
+                <span className="text-white font-medium">${ref.cost_per_lb}</span>
+              </div>
+              
+              <div className="pt-3 border-t border-slate-700">
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full ${ref.stock < ref.low_threshold ? 'bg-red-500' : 'bg-blue-500'}`}
+                    style={{ width: `${(ref.stock / (ref.low_threshold * 2)) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-slate-400 mt-1">
+                  {ref.stock < ref.low_threshold ? 'Low stock - reorder soon' : 'Stock level good'}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Recent Usage</h3>
+        <div className="space-y-3">
+          {[
+            { tech: 'Mike Rodriguez', job: 'Johnson Residence', type: 'R-410A', amount: 3, time: '10:45 AM' },
+            { tech: 'Danny Chen', job: 'Downtown Office', type: 'R-410A', amount: 2, time: '9:30 AM' },
+            { tech: 'James Wilson', job: 'Brown Residence', type: 'R-22', amount: 1.5, time: '11:20 AM' },
+            { tech: 'Steve Martinez', job: 'West Ed Install', type: 'R-410A', amount: 8, time: '2:15 PM' },
+          ].map((usage, idx) => (
+            <div key={idx} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
+              <div>
+                <div className="font-medium text-white">{usage.tech}</div>
+                <div className="text-sm text-slate-400">{usage.job}</div>
+                <div className="text-xs text-slate-500 mt-1">{usage.time}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-white">{usage.amount} lbs</div>
+                <div className="text-sm text-slate-400">{usage.type}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+            <Droplets className="w-5 h-5 text-blue-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white mb-1">EPA Compliance Active</h3>
+            <p className="text-slate-300 text-sm mb-3">
+              All refrigerant usage automatically logged. Monthly EPA 608 report generation ready. 
+              Current compliance: <span className="text-green-400 font-semibold">100%</span>
+            </p>
+            <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">
+              Generate Report →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const CustomersView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Customers</h2>
+        <div className="flex gap-3">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              type="text"
+              placeholder="Search customers..."
+              className="bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+          <button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
+            <Plus className="w-4 h-4" />
+            New Customer
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="text-sm text-slate-400 mb-1">Total Customers</div>
+          <div className="text-3xl font-bold text-white">247</div>
+          <div className="text-sm text-green-400 mt-1">+12 this month</div>
+        </div>
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="text-sm text-slate-400 mb-1">Active This Month</div>
+          <div className="text-3xl font-bold text-white">89</div>
+          <div className="text-sm text-blue-400 mt-1">36% of total</div>
+        </div>
+        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+          <div className="text-sm text-slate-400 mb-1">Avg Lifetime Value</div>
+          <div className="text-3xl font-bold text-white">$3,240</div>
+          <div className="text-sm text-purple-400 mt-1">Per customer</div>
+        </div>
+      </div>
+
+      <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
+        <div className="space-y-3">
+          {[
+            { name: 'Johnson Family', address: '8423 Gateway Blvd', phone: '(780) 555-1234', lastService: '2 weeks ago', jobs: 8, value: 2840 },
+            { name: 'Downtown Office Tower', address: '10234 Jasper Ave', phone: '(780) 555-5678', lastService: 'Today', jobs: 24, value: 12450 },
+            { name: 'Anderson Family', address: '5623 82 Ave', phone: '(780) 555-9012', lastService: '1 month ago', jobs: 6, value: 1980 },
+            { name: 'Smith Commercial', address: '12045 104 St', phone: '(780) 555-3456', lastService: '3 days ago', jobs: 15, value: 8200 },
+            { name: 'Brown Residence', address: '9234 Calgary Trail', phone: '(780) 555-7890', lastService: 'Today', jobs: 4, value: 1450 },
+          ].map((customer, idx) => (
+            <div key={idx} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <Users className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <div className="font-semibold text-white">{customer.name}</div>
+                  <div className="text-sm text-slate-400">{customer.address}</div>
+                  <div className="text-xs text-slate-500 mt-1">{customer.phone}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-white">${customer.value.toLocaleString()}</div>
+                <div className="text-sm text-slate-400">{customer.jobs} jobs</div>
+                <div className="text-xs text-slate-500 mt-1">Last: {customer.lastService}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <Sidebar />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="bg-slate-900/50 backdrop-blur border-b border-slate-800 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-white capitalize">{currentView}</h1>
+              <div className="text-sm text-slate-400">
+                {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                {' • '}
+                {currentTime.toLocaleTimeString()}
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-2 bg-green-500/20 border border-green-500/30 rounded-lg">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-green-400">LIVE</span>
+              </div>
+              <button className="relative text-slate-400 hover:text-white">
+                <Bell className="w-5 h-5" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {currentView === 'dashboard' && <DashboardView />}
+          {currentView === 'gps' && <GPSView />}
+          {currentView === 'schedule' && <ScheduleView />}
+          {currentView === 'invoices' && <InvoicesView />}
+          {currentView === 'refrigerant' && <RefrigerantView />}
+          {currentView === 'customers' && <CustomersView />}
+        </div>
+      </div>
+    </div>
+  );
+}
