@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Truck, MapPin, Clock, Navigation, AlertCircle, 
   DollarSign, FileText, Droplets, Calendar, Users,
@@ -308,7 +308,111 @@ export default function FlowPlatformDemo() {
     </div>
   );
 
-  const GPSView = () => (
+const GPSView = () => {
+  const mapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !mapRef.current) {
+      const initMap = async () => {
+        const L = (await import('leaflet')).default;
+        
+        // Fix for default marker icons
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
+
+        const map = L.map('map-container').setView([53.5444, -113.4909], 12);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+          maxZoom: 19,
+        }).addTo(map);
+
+        mapRef.current = map;
+
+        TECHS.forEach((tech) => {
+          const position = techPositions[tech.id] || 0;
+          const currentPos = tech.route ? tech.route[position % tech.route.length] : { lat: 53.5444, lng: -113.4909 };
+
+          const icon = L.divIcon({
+            html: `
+              <div style="
+                width: 40px;
+                height: 40px;
+                background: ${tech.color}30;
+                border: 3px solid ${tech.color};
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                animation: pulse 2s infinite;
+              ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${tech.color}" stroke-width="2">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+              </div>
+            `,
+            className: 'custom-truck-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
+          });
+
+          const marker = L.marker([currentPos.lat, currentPos.lng], { icon })
+            .addTo(map)
+            .bindPopup(`
+              <div style="padding: 8px; min-width: 200px;">
+                <div style="font-weight: bold; margin-bottom: 4px; color: ${tech.color};">${tech.name}</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">${tech.truck}</div>
+                ${tech.customer ? `
+                  <div style="font-size: 13px; margin-top: 8px;">
+                    <strong style="color: #e2e8f0;">${tech.customer}</strong><br/>
+                    <span style="font-size: 11px; color: #64748b;">${tech.currentJob}</span><br/>
+                    <span style="font-size: 11px; color: #94a3b8;">${tech.jobType}</span>
+                  </div>
+                  ${tech.eta ? `<div style="margin-top: 8px; color: #3b82f6; font-weight: bold;">ETA: ${tech.eta} min</div>` : ''}
+                ` : `
+                  <div style="font-size: 13px; color: #64748b;">${tech.jobType}</div>
+                `}
+              </div>
+            `);
+
+          markersRef.current[tech.id] = marker;
+        });
+      };
+
+      initMap();
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mapRef.current) {
+      TECHS.forEach((tech) => {
+        const marker = markersRef.current[tech.id];
+        if (marker && tech.route) {
+          const position = techPositions[tech.id] || 0;
+          const currentPos = tech.route[position % tech.route.length];
+          marker.setLatLng([currentPos.lat, currentPos.lng]);
+        }
+      });
+    }
+  }, [techPositions]);
+
+  return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-1 space-y-4">
         <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-4">
@@ -317,7 +421,16 @@ export default function FlowPlatformDemo() {
             {TECHS.map(tech => (
               <div
                 key={tech.id}
-                onClick={() => setSelectedTech(tech.id)}
+                onClick={() => {
+                  setSelectedTech(tech.id);
+                  const marker = markersRef.current[tech.id];
+                  if (marker && mapRef.current) {
+                    marker.openPopup();
+                    const position = techPositions[tech.id] || 0;
+                    const currentPos = tech.route ? tech.route[position % tech.route.length] : { lat: 53.5444, lng: -113.4909 };
+                    mapRef.current.setView([currentPos.lat, currentPos.lng], 15);
+                  }
+                }}
                 className={`p-4 rounded-lg border cursor-pointer transition-all ${
                   selectedTech === tech.id
                     ? 'bg-slate-700/50 border-blue-500 shadow-lg'
@@ -376,78 +489,19 @@ export default function FlowPlatformDemo() {
             </div>
           </div>
           
-          <div className="relative w-full h-[600px] bg-slate-900 rounded-lg overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900"></div>
-            <div className="absolute inset-0 opacity-10">
-              <div className="grid grid-cols-12 grid-rows-12 h-full w-full">
-                {[...Array(144)].map((_, i) => (
-                  <div key={i} className="border border-slate-600"></div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="absolute top-4 left-4 bg-slate-800/80 backdrop-blur px-3 py-2 rounded-lg border border-slate-700">
-              <div className="text-sm font-semibold text-white">Edmonton, Alberta</div>
-              <div className="text-xs text-slate-400">Real-time tracking active</div>
-            </div>
-            
-            {TECHS.map((tech, idx) => {
-              const position = techPositions[tech.id] || 0;
-              const xPos = 15 + (idx * 15) + (position * 2);
-              const yPos = 20 + (idx * 8) + (position * 3);
-              
-              return (
-                <div
-                  key={tech.id}
-                  className={`absolute transition-all duration-3000 cursor-pointer ${selectedTech === tech.id ? 'z-20 scale-125' : 'z-10'}`}
-                  style={{ left: `${xPos}%`, top: `${yPos}%` }}
-                  onClick={() => setSelectedTech(tech.id)}
-                >
-                  <div className="relative">
-                    <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg animate-pulse"
-                      style={{ backgroundColor: tech.color + '30', borderColor: tech.color, borderWidth: '2px' }}
-                    >
-                      <Truck className="w-6 h-6" style={{ color: tech.color }} />
-                    </div>
-                    
-                    {selectedTech === tech.id && (
-                      <div className="absolute top-14 left-1/2 -translate-x-1/2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-3 z-30">
-                        <div className="font-semibold text-white mb-1">{tech.name}</div>
-                        <div className="text-xs text-slate-400 mb-2">{tech.truck}</div>
-                        {tech.customer && (
-                          <>
-                            <div className="text-sm text-slate-300 mb-1">{tech.customer}</div>
-                            <div className="text-xs text-slate-500 mb-2">{tech.currentJob}</div>
-                            <div className="text-xs text-slate-400">{tech.jobType}</div>
-                            {tech.eta && tech.eta > 0 && (
-                              <div className="mt-2 pt-2 border-t border-slate-700">
-                                <div className="text-sm text-blue-400 font-medium">Arriving in {tech.eta} minutes</div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            
-            <div className="absolute bottom-4 right-4 bg-slate-800/80 backdrop-blur px-4 py-3 rounded-lg border border-slate-700">
-              <div className="text-xs font-semibold text-slate-400 mb-2">Status</div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span className="text-xs text-slate-300">En Route</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-xs text-slate-300">On Site</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                  <span className="text-xs text-slate-300">Available</span>
+          <div 
+            id="map-container" 
+            className="w-full h-[600px] rounded-lg overflow-hidden"
+            style={{ background: '#1e293b' }}
+          ></div>
+
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="text-sm font-medium text-blue-300 mb-1">Live GPS Tracking</div>
+                <div className="text-xs text-blue-400/80">
+                  Real Edmonton streets. Click any truck marker for details. In production, connects to actual GPS devices with 2-3 second updates.
                 </div>
               </div>
             </div>
@@ -456,6 +510,7 @@ export default function FlowPlatformDemo() {
       </div>
     </div>
   );
+};
 
   const ScheduleView = () => (
     <div className="space-y-6">
