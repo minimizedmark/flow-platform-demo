@@ -24,6 +24,13 @@ const TECHS = [
     eta: 8,
     skills: ['Lennox', 'Carrier', 'Refrigeration'],
     color: '#3B82F6',
+    route: [
+      { lat: 53.5100, lng: -113.4800 },
+      { lat: 53.5150, lng: -113.4750 },
+      { lat: 53.5200, lng: -113.4700 },
+      { lat: 53.5250, lng: -113.4650 },
+      { lat: 53.5300, lng: -113.4600 },
+    ]
   },
   {
     id: 2,
@@ -37,6 +44,9 @@ const TECHS = [
     eta: 0,
     skills: ['Commercial', 'Trane', 'York'],
     color: '#10B981',
+    route: [
+      { lat: 53.5444, lng: -113.4909 },
+    ]
   },
   {
     id: 3,
@@ -50,6 +60,13 @@ const TECHS = [
     eta: 15,
     skills: ['Installations', 'Lennox', 'Goodman'],
     color: '#F59E0B',
+    route: [
+      { lat: 53.5280, lng: -113.5100 },
+      { lat: 53.5300, lng: -113.5200 },
+      { lat: 53.5320, lng: -113.5300 },
+      { lat: 53.5340, lng: -113.5400 },
+      { lat: 53.5360, lng: -113.5500 },
+    ]
   },
   {
     id: 4,
@@ -63,6 +80,11 @@ const TECHS = [
     eta: null,
     skills: ['Furnaces', 'Bryant', 'Rheem'],
     color: '#6B7280',
+    route: [
+      { lat: 53.5700, lng: -113.4200 },
+      { lat: 53.5650, lng: -113.4300 },
+      { lat: 53.5600, lng: -113.4400 },
+    ]
   },
   {
     id: 5,
@@ -76,6 +98,13 @@ const TECHS = [
     eta: 22,
     skills: ['Maintenance', 'All brands'],
     color: '#8B5CF6',
+    route: [
+      { lat: 53.5200, lng: -113.5000 },
+      { lat: 53.5230, lng: -113.4950 },
+      { lat: 53.5260, lng: -113.4900 },
+      { lat: 53.5290, lng: -113.4850 },
+      { lat: 53.5320, lng: -113.4800 },
+    ]
   }
 ];
 
