@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Flow Platform - HVAC Management',
-  description: 'AI-Powered HVAC Management for Small Contractors',
+  title: 'HVACflow – Only 47 Founding Spots Left',
+  description: 'AI-Powered HVAC Management for Small Contractors - Founding Member Program',
 }
 
 export default function RootLayout({
