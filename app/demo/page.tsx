@@ -166,148 +166,130 @@ export default function FlowPlatformDemo() {
     return () => clearInterval(interval);
   }, []);
 
-useEffect(() => {
-  // Only initialize when GPS view is active
-  if (currentView !== 'gps') return;
-  if (mapRef.current) return; // Already initialized
-  
-  // Wait for container to be in DOM
-  const container = document.getElementById('map-container');
-  if (!container) {
-    console.error('Map container not found');
-    return;
-  }
+// Initialize map once when GPS view is active
+  useEffect(() => {
+    if (currentView !== 'gps' || mapRef.current) return;
+    
+    const container = document.getElementById('map-container');
+    if (!container) return;
 
-  const initMap = async () => {
-    try {
-      const L = (await import('leaflet')).default;
-      
-      // Fix Leaflet default icon paths
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      });
+    let timeoutId: NodeJS.Timeout;
 
-      // Initialize map
-      const map = L.map('map-container', {
-        center: [53.5444, -113.4909],
-        zoom: 12,
-        scrollWheelZoom: true,
-      });
-      
-      // Add tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map);
-
-      mapRef.current = map;
-
-      // Add truck markers
-      TECHS.forEach((tech) => {
-        const position = techPositions[tech.id] || 0;
-        const currentPos = tech.route[position % tech.route.length];
-
-        const icon = L.divIcon({
-          html: `
-            <div style="
-              width: 40px;
-              height: 40px;
-              background: ${tech.color}30;
-              border: 3px solid ${tech.color};
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            ">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${tech.color}" stroke-width="2">
-                <rect x="1" y="3" width="15" height="13"></rect>
-                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                <circle cx="18.5" cy="18.5" r="2.5"></circle>
-              </svg>
-            </div>
-          `,
-          className: 'custom-truck-marker',
-          iconSize: [40, 40],
-          iconAnchor: [20, 20],
+    const initMap = async () => {
+      try {
+        const L = (await import('leaflet')).default;
+        
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
         });
 
-        const marker = L.marker([currentPos.lat, currentPos.lng], { icon })
-          .addTo(map)
-          .bindPopup(`
-            <div style="padding: 8px; min-width: 200px;">
-              <div style="font-weight: bold; margin-bottom: 4px; color: ${tech.color};">${tech.name}</div>
-              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">${tech.truck}</div>
-              ${tech.customer ? `
-                <div style="font-size: 13px; margin-top: 8px;">
-                  <strong style="color: #e2e8f0;">${tech.customer}</strong><br/>
-                  <span style="font-size: 11px; color: #64748b;">${tech.currentJob}</span><br/>
-                  <span style="font-size: 11px; color: #94a3b8;">${tech.jobType}</span>
-                </div>
-                ${tech.eta ? `<div style="margin-top: 8px; color: #3b82f6; font-weight: bold;">ETA: ${tech.eta} min</div>` : ''}
-              ` : `
-                <div style="font-size: 13px; color: #64748b;">${tech.jobType}</div>
-              `}
-            </div>
-          `);
-
-        markersRef.current[tech.id] = marker;
-      });
-
-      // Force map to recalculate size
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 250);
-
-    } catch (error) {
-      console.error('Error initializing map:', error);
-    }
-  };
-
-  // Small delay to ensure container is rendered
-  setTimeout(() => {
-    initMap();
-  }, 100);
-
-  // Cleanup
-  return () => {
-    if (mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
-      markersRef.current = [];
-    }
-  };
-}, [currentView]);
+        const map = L.map('map-container', {
+          center: [53.5444, -113.4909],
+          zoom: 12,
         });
-      };
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+          maxZoom: 19,
+        }).addTo(map);
 
-      initMap();
-    }
+        mapRef.current = map;
+
+        TECHS.forEach((tech) => {
+          const position = techPositions[tech.id] || 0;
+          const currentPos = tech.route[position % tech.route.length];
+
+          const icon = L.divIcon({
+            html: `
+              <div style="
+                width: 40px;
+                height: 40px;
+                background: ${tech.color}30;
+                border: 3px solid ${tech.color};
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+              ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${tech.color}" stroke-width="2">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+              </div>
+            `,
+            className: 'custom-truck-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
+          });
+
+          const marker = L.marker([currentPos.lat, currentPos.lng], { icon })
+            .addTo(map)
+            .bindPopup(`
+              <div style="padding: 8px; min-width: 200px;">
+                <div style="font-weight: bold; margin-bottom: 4px; color: ${tech.color};">${tech.name}</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">${tech.truck}</div>
+                ${tech.customer ? `
+                  <div style="font-size: 13px; margin-top: 8px;">
+                    <strong style="color: #e2e8f0;">${tech.customer}</strong><br/>
+                    <span style="font-size: 11px; color: #64748b;">${tech.currentJob}</span><br/>
+                    <span style="font-size: 11px; color: #94a3b8;">${tech.jobType}</span>
+                  </div>
+                  ${tech.eta ? `<div style="margin-top: 8px; color: #3b82f6; font-weight: bold;">ETA: ${tech.eta} min</div>` : ''}
+                ` : `
+                  <div style="font-size: 13px; color: #64748b;">${tech.jobType}</div>
+                `}
+              </div>
+            `);
+
+          markersRef.current[tech.id] = marker;
+        });
+
+        timeoutId = setTimeout(() => {
+          if (map) map.invalidateSize();
+        }, 100);
+
+      } catch (error) {
+        console.error('Map error:', error);
+      }
+    };
+
+    timeoutId = setTimeout(() => initMap(), 50);
 
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [currentView]);
 
+  // Update truck positions
   useEffect(() => {
-    if (mapRef.current) {
-      TECHS.forEach((tech) => {
-        const marker = markersRef.current[tech.id];
-        if (marker && tech.route) {
-          const position = techPositions[tech.id] || 0;
-          const currentPos = tech.route[position % tech.route.length];
-          marker.setLatLng([currentPos.lat, currentPos.lng]);
-        }
-      });
-    }
+    if (!mapRef.current) return;
+    
+    TECHS.forEach((tech) => {
+      const marker = markersRef.current[tech.id];
+      if (marker && tech.route) {
+        const position = techPositions[tech.id] || 0;
+        const currentPos = tech.route[position % tech.route.length];
+        marker.setLatLng([currentPos.lat, currentPos.lng]);
+      }
+    });
   }, [techPositions]);
+
+  // Cleanup map when leaving GPS view
+  useEffect(() => {
+    return () => {
+      if (currentView !== 'gps' && mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markersRef.current = [];
+      }
+    };
+  }, [currentView]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
