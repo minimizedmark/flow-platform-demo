@@ -1,5 +1,5 @@
 'use client';
-import 'leaflet/dist/leaflet.css';
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Truck, MapPin, Clock, Navigation, AlertCircle, Calendar, Users,
