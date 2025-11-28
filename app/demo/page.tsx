@@ -279,7 +279,19 @@ export default function FlowPlatformDemo() {
     };
 
     const timer = setTimeout(() => initMap(), 100);
-    
+    // Update marker positions separately
+useEffect(() => {
+  if (!mapRef.current || currentView !== 'gps') return;
+  
+  TECHS.forEach((tech) => {
+    const marker = markersRef.current[tech.id];
+    if (marker && tech.route) {
+      const position = techPositions[tech.id] || 0;
+      const currentPos = tech.route[position % tech.route.length];
+      marker.setLatLng([currentPos.lat, currentPos.lng]);
+    }
+  });
+}, [techPositions, currentView]);
     return () => {
       clearTimeout(timer);
       if (mapRef.current) {
