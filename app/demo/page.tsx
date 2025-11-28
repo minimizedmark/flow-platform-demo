@@ -897,7 +897,7 @@ useEffect(() => {
                   {currentView === 'refrigerant' && 'Refrigerant Tracking'}
                   {currentView === 'customers' && 'Customer Management'}
                 </h2>
-                <p className="text-sm text-slate-400">{currentTime.toLocaleString()}</p>
+             <p className="text-sm text-slate-400">{mounted ? currentTime.toLocaleString() : '--:--:--'}</p>
               </div>
             </div>
             
