@@ -137,13 +137,16 @@ export default function FlowPlatformDemo() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedTech, setSelectedTech] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+   const [mounted, setMounted] = useState(false);
   const [revenue, setRevenue] = useState(8450);
   const [techPositions, setTechPositions] = useState<Record<number, number>>({});
   const [gpsUpdates, setGpsUpdates] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
