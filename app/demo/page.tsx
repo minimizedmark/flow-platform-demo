@@ -168,13 +168,34 @@ export default function FlowPlatformDemo() {
   }, []);
 
 // Initialize map once when GPS view is active
+ // Map initialization and updates - single unified useEffect
   useEffect(() => {
-    if (currentView !== 'gps' || mapRef.current) return;
-    
+    // Handle cleanup when leaving GPS view
+    if (currentView !== 'gps') {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markersRef.current = [];
+      }
+      return;
+    }
+
+    // Update existing map markers
+    if (mapRef.current) {
+      TECHS.forEach((tech) => {
+        const marker = markersRef.current[tech.id];
+        if (marker && tech.route) {
+          const position = techPositions[tech.id] || 0;
+          const currentPos = tech.route[position % tech.route.length];
+          marker.setLatLng([currentPos.lat, currentPos.lng]);
+        }
+      });
+      return;
+    }
+
+    // Initialize new map
     const container = document.getElementById('map-container');
     if (!container) return;
-
-    let timeoutId: NodeJS.Timeout;
 
     const initMap = async () => {
       try {
@@ -251,7 +272,7 @@ export default function FlowPlatformDemo() {
           markersRef.current[tech.id] = marker;
         });
 
-        timeoutId = setTimeout(() => {
+        setTimeout(() => {
           if (map) map.invalidateSize();
         }, 100);
 
@@ -260,47 +281,8 @@ export default function FlowPlatformDemo() {
       }
     };
 
-    timeoutId = setTimeout(() => initMap(), 50);
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [currentView]);
-
-  // Update truck positions
-  useEffect(() => {
-    if (!mapRef.current) return;
-    
-    TECHS.forEach((tech) => {
-      const marker = markersRef.current[tech.id];
-      if (marker && tech.route) {
-        const position = techPositions[tech.id] || 0;
-        const currentPos = tech.route[position % tech.route.length];
-        marker.setLatLng([currentPos.lat, currentPos.lng]);
-      }
-    });
-  }, [techPositions]);
-
-  // Cleanup map when leaving GPS view
-  useEffect(() => {
-    return () => {
-      if (currentView !== 'gps' && mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        markersRef.current = [];
-      }
-    };
-  }, [currentView]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'en-route': return 'bg-blue-500';
-      case 'on-site': return 'bg-green-500';
-      case 'available': return 'bg-gray-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
+    setTimeout(() => initMap(), 50);
+  }, [currentView, techPositions]);
   const Sidebar = () => (
     <div className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out ${
       sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
