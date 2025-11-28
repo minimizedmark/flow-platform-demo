@@ -146,6 +146,10 @@ export default function FlowPlatformDemo() {
   const markersRef = useRef<any[]>([]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -167,28 +171,18 @@ export default function FlowPlatformDemo() {
     return () => clearInterval(interval);
   }, []);
 
-  // Map initialization - single unified useEffect
+  // Map initialization
   useEffect(() => {
-    // Only run when GPS view is active
     if (currentView !== 'gps') {
       return;
     }
 
-    // If map already exists, just update markers
     if (mapRef.current) {
-      TECHS.forEach((tech) => {
-        const marker = markersRef.current[tech.id];
-        if (marker && tech.route) {
-          const position = techPositions[tech.id] || 0;
-          const currentPos = tech.route[position % tech.route.length];
-          marker.setLatLng([currentPos.lat, currentPos.lng]);
-        }
-      });
       return;
     }
 
-    // Initialize new map
-    const initMap = async () => {// Load Leaflet CSS dynamically
+    const initMap = async () => {
+      // Load Leaflet CSS dynamically
       if (!document.getElementById('leaflet-css')) {
         const link = document.createElement('link');
         link.id = 'leaflet-css';
@@ -196,20 +190,7 @@ export default function FlowPlatformDemo() {
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(link);
       }
-```
 
-So it will look like:
-```
-191  const initMap = async () => {
-     // Load Leaflet CSS dynamically
-     if (!document.getElementById('leaflet-css')) {
-       const link = document.createElement('link');
-       link.id = 'leaflet-css';
-       link.rel = 'stylesheet';
-       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-       document.head.appendChild(link);
-     }
-192  const container = document.getElementById('map-container');
       const container = document.getElementById('map-container');
       if (!container) return;
 
@@ -300,19 +281,7 @@ So it will look like:
     };
 
     const timer = setTimeout(() => initMap(), 100);
-    // Update marker positions separately
-useEffect(() => {
-  if (!mapRef.current || currentView !== 'gps') return;
-  
-  TECHS.forEach((tech) => {
-    const marker = markersRef.current[tech.id];
-    if (marker && tech.route) {
-      const position = techPositions[tech.id] || 0;
-      const currentPos = tech.route[position % tech.route.length];
-      marker.setLatLng([currentPos.lat, currentPos.lng]);
-    }
-  });
-}, [techPositions, currentView]);
+    
     return () => {
       clearTimeout(timer);
       if (mapRef.current) {
@@ -322,6 +291,20 @@ useEffect(() => {
       }
     };
   }, [currentView]);
+
+  // Update marker positions
+  useEffect(() => {
+    if (!mapRef.current || currentView !== 'gps') return;
+    
+    TECHS.forEach((tech) => {
+      const marker = markersRef.current[tech.id];
+      if (marker && tech.route) {
+        const position = techPositions[tech.id] || 0;
+        const currentPos = tech.route[position % tech.route.length];
+        marker.setLatLng([currentPos.lat, currentPos.lng]);
+      }
+    });
+  }, [techPositions, currentView]);
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -897,7 +880,7 @@ useEffect(() => {
                   {currentView === 'refrigerant' && 'Refrigerant Tracking'}
                   {currentView === 'customers' && 'Customer Management'}
                 </h2>
-             <p className="text-sm text-slate-400">{mounted ? currentTime.toLocaleString() : '--:--:--'}</p>
+                <p className="text-sm text-slate-400">{mounted ? currentTime.toLocaleString() : '--:--:--'}</p>
               </div>
             </div>
             
