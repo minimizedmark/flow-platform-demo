@@ -171,6 +171,7 @@ export default function FlowPlatformDemo() {
 
 // Initialize map once when GPS view is active
   useEffect(() => {
+     if (!mounted) return;
     if (currentView !== 'gps' || mapRef.current) return;
     
     const container = document.getElementById('map-container');
