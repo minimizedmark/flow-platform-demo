@@ -118,15 +118,42 @@ export default function LandingPage() {
           </p>
         </header>
 
-        <h2 style={{ color: '#00d4ff', textAlign: 'center', marginTop: '60px' }}>
-          🔴 LIVE DEMO (Updates Every 3 Seconds)
-        </h2>
-        <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '20px' }}>
-          Click "GPS Tracking" in the sidebar to see real-time trucks on actual Edmonton streets
-        </p>
-        <div style={{ width: '100%', height: '700px', border: '3px solid #00d4ff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,212,255,0.3)', margin: '40px 0' }}>
-          <iframe src="/demo" style={{ width: '100%', height: '100%', border: 'none' }} />
-        </div>
+     <div style={{ textAlign: 'center', margin: '60px 0' }}>
+  <h2 style={{ color: '#00d4ff', marginBottom: '20px' }}>See It In Action</h2>
+  <p style={{ color: '#94a3b8', marginBottom: '30px', fontSize: '18px' }}>
+    Real-time GPS tracking, smart scheduling, automatic invoicing, and more
+  </p>
+  <a 
+    href="/demo" 
+    target="_blank"
+    style={{
+      display: 'inline-block',
+      background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+      color: '#0a192f',
+      fontWeight: 'bold',
+      fontSize: '24px',
+      padding: '20px 60px',
+      borderRadius: '12px',
+      textDecoration: 'none',
+      boxShadow: '0 10px 30px rgba(0,212,255,0.4)',
+      transition: 'all 0.3s',
+      border: 'none'
+    }}
+    onMouseOver={(e) => {
+      e.currentTarget.style.transform = 'scale(1.05)';
+      e.currentTarget.style.boxShadow = '0 15px 40px rgba(0,212,255,0.6)';
+    }}
+    onMouseOut={(e) => {
+      e.currentTarget.style.transform = 'scale(1)';
+      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,212,255,0.4)';
+    }}
+  >
+    🚀 View Live Demo
+  </a>
+  <p style={{ color: '#64748b', fontSize: '14px', marginTop: '15px' }}>
+    Opens in new tab • No signup required • Fully interactive
+  </p>
+</div>
 
         <div style={{ background: '#001528', padding: '40px', borderRadius: '16px', border: '2px solid #00d4ff', margin: '40px 0' }}>
           <h2 style={{ color: '#00d4ff', textAlign: 'center', marginTop: 0 }}>✅ Live Today (Working Demo Above)</h2>
