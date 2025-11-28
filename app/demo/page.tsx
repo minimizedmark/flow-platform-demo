@@ -144,9 +144,7 @@ export default function FlowPlatformDemo() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -171,7 +169,6 @@ export default function FlowPlatformDemo() {
 
 // Initialize map once when GPS view is active
   useEffect(() => {
-     if (!mounted) return;
     if (currentView !== 'gps' || mapRef.current) return;
     
     const container = document.getElementById('map-container');
