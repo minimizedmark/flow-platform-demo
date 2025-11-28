@@ -288,7 +288,7 @@ export default function FlowPlatformDemo() {
         markersRef.current = [];
       }
     };
-  }, [currentView, techPositions]);
+  }, [currentView]);
 
   const getStatusColor = (status: string) => {
     switch(status) {
