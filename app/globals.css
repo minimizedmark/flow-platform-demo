@@ -58,3 +58,20 @@ body {
 .leaflet-popup-tip {
   background: #1e293b;
 }
+/* Force Leaflet map to display */
+#map-container {
+  height: 600px !important;
+  width: 100% !important;
+}
+
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.leaflet-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-marker-pane {
+  z-index: auto !important;
+}
