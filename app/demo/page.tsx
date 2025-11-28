@@ -188,7 +188,28 @@ export default function FlowPlatformDemo() {
     }
 
     // Initialize new map
-    const initMap = async () => {
+    const initMap = async () => {// Load Leaflet CSS dynamically
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+```
+
+So it will look like:
+```
+191  const initMap = async () => {
+     // Load Leaflet CSS dynamically
+     if (!document.getElementById('leaflet-css')) {
+       const link = document.createElement('link');
+       link.id = 'leaflet-css';
+       link.rel = 'stylesheet';
+       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+       document.head.appendChild(link);
+     }
+192  const container = document.getElementById('map-container');
       const container = document.getElementById('map-container');
       if (!container) return;
 
