@@ -5,7 +5,7 @@ import {
   Truck, MapPin, Clock, Navigation, AlertCircle, Calendar, Users,
   DollarSign, FileText, Droplets, TrendingUp, Mail, Search,
   CheckCircle, Send, Download, Activity, BarChart3, Settings, Menu, X,
-  Plus, Edit, Home, Bell
+  
 } from 'lucide-react';
 
 // Edmonton HVAC Tech Data with real routes
