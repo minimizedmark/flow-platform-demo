@@ -1,929 +1,335 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import {
-  Truck, MapPin, Clock, Navigation, AlertCircle, Calendar, Users,
-  DollarSign, FileText, Droplets, TrendingUp, Activity, 
-  CheckCircle, Menu, Home
-} from 'lucide-react';
+import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import { loadStripe } from '@stripe/stripe-js'
 
-// Edmonton HVAC Tech Data with real GPS coordinates
-const TECHS = [
-  {
-    id: 1,
-    name: 'Mike Rodriguez',
-    truck: 'Truck #1',
-    phone: '(780) 555-0142',
-    status: 'en-route',
-    currentJob: '8423 Gateway Blvd',
-    customer: 'Johnson Residence',
-    jobType: 'No Cooling - Emergency',
-    eta: 8,
-    color: '#3B82F6',
-    // Gateway Blvd area - positions in percentage of map
-    position: { x: 48, y: 58 }
-  },
-  {
-    id: 2,
-    name: 'Danny Chen',
-    truck: 'Truck #2',
-    phone: '(780) 555-0198',
-    status: 'on-site',
-    currentJob: '10234 Jasper Ave',
-    customer: 'Downtown Office Tower',
-    jobType: 'Quarterly Maintenance',
-    eta: 0,
-    color: '#10B981',
-    // Downtown Jasper Ave
-    position: { x: 50, y: 35 }
-  },
-  {
-    id: 3,
-    name: 'Steve Martinez',
-    truck: 'Truck #3',
-    phone: '(780) 555-0223',
-    status: 'en-route',
-    currentJob: '15234 Stony Plain Rd',
-    customer: 'West Ed Area Residence',
-    jobType: 'Installation - New Lennox',
-    eta: 15,
-    color: '#F59E0B',
-    // West Edmonton (Stony Plain Rd)
-    position: { x: 28, y: 42 }
-  },
-  {
-    id: 4,
-    name: 'Carlos Diaz',
-    truck: 'Truck #4',
-    phone: '(780) 555-0267',
-    status: 'available',
-    currentJob: 'Returning to shop',
-    customer: null,
-    jobType: 'Available for dispatch',
-    eta: null,
-    color: '#6B7280',
-    // North Central Edmonton
-    position: { x: 52, y: 28 }
-  },
-  {
-    id: 5,
-    name: 'James Wilson',
-    truck: 'Truck #5',
-    phone: '(780) 555-0291',
-    status: 'en-route',
-    currentJob: '7234 99 St NW',
-    customer: 'Strathcona Family',
-    jobType: 'Furnace Tune-up',
-    eta: 22,
-    color: '#8B5CF6',
-    // Strathcona area (99 St)
-    position: { x: 55, y: 52 }
-  }
-];
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-const JOBS = [
-  { id: 1, customer: 'Johnson Residence', address: '8423 Gateway Blvd', type: 'Emergency', tech: 'Mike Rodriguez', status: 'in-progress', value: 485, time: '10:30 AM' },
-  { id: 2, customer: 'Downtown Office', address: '10234 Jasper Ave', type: 'Maintenance', tech: 'Danny Chen', status: 'in-progress', value: 350, time: '9:00 AM' },
-  { id: 3, customer: 'Anderson Family', address: '5623 82 Ave', type: 'Installation', tech: 'Steve Martinez', status: 'scheduled', value: 4850, time: '2:00 PM' },
-  { id: 4, customer: 'Smith Commercial', address: '12045 104 St', type: 'Quote', tech: 'Unassigned', status: 'pending', value: 0, time: '3:30 PM' },
-  { id: 5, customer: 'Brown Residence', address: '9234 Calgary Trail', type: 'Repair', tech: 'James Wilson', status: 'in-progress', value: 325, time: '11:15 AM' },
-];
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
-export default function FlowPlatformDemo() {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [selectedTech, setSelectedTech] = useState<number | null>(null);
-  const [updates, setUpdates] = useState(0);
-  const [revenue, setRevenue] = useState(8450);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mounted, setMounted] = useState(false);
-  const [techPositions, setTechPositions] = useState<{[key: number]: {x: number, y: number}}>(
-    TECHS.reduce((acc, tech) => ({ ...acc, [tech.id]: tech.position }), {})
-  );
+export default function Home() {
+  const [spotsLeft, setSpotsLeft] = useState<number>(50)
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const fetchCount = async () => {
+    const { count } = await supabase
+      .from('founding_members')
+      .select('*', { count: 'exact', head: true })
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTechPositions(prev => {
-        const newPositions = {...prev};
-        TECHS.forEach(tech => {
-          if (tech.status === 'en-route') {
-            const current = prev[tech.id];
-            newPositions[tech.id] = {
-              x: current.x + (Math.random() - 0.5) * 1.5,
-              y: current.y + (Math.random() - 0.5) * 1.5
-            };
-          }
-        });
-        return newPositions;
-      });
-      setUpdates(u => u + 1);
-      setRevenue(r => r + Math.floor(Math.random() * 20));
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    const left = 50 - (count || 0)
+    setSpotsLeft(left)
+    setLoading(false)
+  }
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'en-route': return 'bg-blue-500';
-      case 'on-site': return 'bg-green-500';
-      case 'available': return 'bg-gray-500';
-      case 'in-progress': return 'bg-blue-500';
-      case 'scheduled': return 'bg-yellow-500';
-      case 'pending': return 'bg-orange-500';
-      default: return 'bg-gray-500';
-    }
-  };
+  useEffect(() => {
+    fetchCount()
 
-  const currentTime = new Date();
+    const channel = supabase
+      .channel('founding-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'founding_members' }, fetchCount)
+      .subscribe()
 
-  const Sidebar = () => (
-    <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-slate-900 border-r border-slate-800 transition-all duration-300 flex flex-col`}>
-      <div className="p-4 border-b border-slate-800">
-        <div className="flex items-center justify-between">
-          {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Navigation className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div className="font-bold text-white">HVACflow</div>
-              </div>
-            </div>
-          )}
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-slate-400 hover:text-white">
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-      <nav className="flex-1 p-3 space-y-1">
-        {[
-          { id: 'dashboard', icon: Home, label: 'Dashboard' },
-          { id: 'gps', icon: MapPin, label: 'GPS Tracking' },
-          { id: 'schedule', icon: Calendar, label: 'Schedule' },
-          { id: 'invoices', icon: FileText, label: 'Invoices' },
-          { id: 'refrigerant', icon: Droplets, label: 'Refrigerant' },
-          { id: 'customers', icon: Users, label: 'Customers' },
-        ].map(item => (
-          <button
-            key={item.id}
-            onClick={() => setCurrentView(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-              currentView === item.id
-                ? 'bg-blue-500 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <item.icon className="w-5 h-5" />
-            {sidebarOpen && <span className="font-medium">{item.label}</span>}
-          </button>
-        ))}
-      </nav>
-    </div>
-  );
+    return () => { supabase.removeChannel(channel) }
+  }, [])
 
-  const DashboardView = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">Today's Revenue</span>
-            <DollarSign className="w-5 h-5 text-green-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">${revenue.toLocaleString()}</div>
-          <div className="text-sm text-green-400 mt-1">+12.5% from yesterday</div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">Active Jobs</span>
-            <Activity className="w-5 h-5 text-blue-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">8</div>
-          <div className="text-sm text-slate-400 mt-1">3 in progress, 5 scheduled</div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">Jobs Completed</span>
-            <CheckCircle className="w-5 h-5 text-purple-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">12</div>
-          <div className="text-sm text-purple-400 mt-1">+3 since 9 AM</div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">GPS Updates</span>
-            <TrendingUp className="w-5 h-5 text-orange-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">{updates}</div>
-          <div className="text-sm text-slate-400 mt-1">Every 3 seconds</div>
-        </div>
-      </div>
-      <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-6">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Activity className="w-5 h-5 text-blue-400" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-white mb-2">AI Insight</h3>
-            <p className="text-slate-300 mb-3">
-              Found 8 customers due for seasonal maintenance. Automated reminders sent. 
-              3 already booked appointments. Potential revenue: <span className="text-green-400 font-semibold">$2,850</span>
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Technicians</h3>
-          <div className="space-y-3">
-            {TECHS.map(tech => (
-              <div key={tech.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: tech.color + '20' }}>
-                    <Truck className="w-5 h-5" style={{ color: tech.color }} />
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">{tech.name}</div>
-                    <div className="text-xs text-slate-400">{tech.truck}</div>
-                  </div>
-                </div>
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tech.status)} text-white`}>
-                  {tech.status === 'en-route' ? 'En Route' : tech.status === 'on-site' ? 'On Site' : 'Available'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Today's Schedule</h3>
-          <div className="space-y-3">
-            {JOBS.slice(0, 5).map(job => (
-              <div key={job.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div className="flex-1">
-                  <div className="font-medium text-white">{job.customer}</div>
-                  <div className="text-xs text-slate-400">{job.address}</div>
-                  <div className="text-xs text-slate-500 mt-1">{job.time} • {job.tech}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-white">${job.value}</div>
-                  <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(job.status)} text-white mt-1`}>
-                    {job.status}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const handleCheckout = async () => {
+    const stripe = await stripePromise
+    const res = await fetch('/api/checkout', { method: 'POST' })
+    const { sessionId } = await res.json()
+    stripe?.redirectToCheckout({ sessionId })
+  }
 
-  const GPSView = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-1 space-y-4">
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-4">
-          <h2 className="text-lg font-semibold text-white mb-4">Active Technicians</h2>
-          <div className="space-y-3">
-            {TECHS.map(tech => (
-              <div
-                key={tech.id}
-                onClick={() => setSelectedTech(selectedTech === tech.id ? null : tech.id)}
-                className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                  selectedTech === tech.id
-                    ? 'bg-slate-700/50 border-blue-500 shadow-lg'
-                    : 'bg-slate-800/30 border-slate-700 hover:bg-slate-700/30'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: tech.color + '20' }}>
-                      <Truck className="w-5 h-5" style={{ color: tech.color }} />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-white">{tech.name}</div>
-                      <div className="text-xs text-slate-400">{tech.truck}</div>
-                    </div>
-                  </div>
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tech.status)} text-white`}>
-                    {tech.status === 'en-route' ? 'En Route' : tech.status === 'on-site' ? 'On Site' : 'Available'}
-                  </div>
-                </div>
-                {tech.customer && (
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
-                      <div className="text-sm">
-                        <div className="text-slate-300">{tech.customer}</div>
-                        <div className="text-slate-500 text-xs">{tech.currentJob}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-slate-400" />
-                      <div className="text-sm text-slate-400">{tech.jobType}</div>
-                    </div>
-                    {tech.eta && tech.eta > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-blue-400" />
-                        <div className="text-sm text-blue-400 font-medium">ETA: {tech.eta} minutes</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+  const soldOut = spotsLeft <= 0
 
-      <div className="lg:col-span-2">
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6 h-[700px]">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Live Map - Edmonton, AB</h2>
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              Updates every 3 seconds
-            </div>
-          </div>
-          
-          {/* Real Map - Multiple tile layers for Edmonton coverage */}
-          <div 
-            className="w-full h-[600px] rounded-lg overflow-hidden relative"
-            style={{ 
-              backgroundImage: `
-                url(https://a.tile.openstreetmap.org/11/357/725.png),
-                url(https://b.tile.openstreetmap.org/11/358/725.png),
-                url(https://c.tile.openstreetmap.org/11/357/726.png),
-                url(https://a.tile.openstreetmap.org/11/358/726.png)
-              `,
-              backgroundSize: '512px 512px, 512px 512px, 512px 512px, 512px 512px',
-              backgroundPosition: '0 0, 512px 0, 0 512px, 512px 512px',
-              backgroundRepeat: 'no-repeat',
-              backgroundColor: '#1e293b'
-            }}
-          >
-            {/* Animated truck markers */}
-            {TECHS.map(tech => {
-              const pos = techPositions[tech.id];
-              return (
-                <div
-                  key={tech.id}
-                  className="absolute transition-all duration-[3000ms] ease-linear cursor-pointer group"
-                  style={{
-                    left: `${pos.x}%`,
-                    top: `${pos.y}%`,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                  onClick={() => setSelectedTech(selectedTech === tech.id ? null : tech.id)}
-                >
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
-                    style={{
-                      backgroundColor: tech.color + '30',
-                      border: `3px solid ${tech.color}`
-                    }}
-                  >
-                    <Truck className="w-6 h-6" style={{ color: tech.color }} />
-                  </div>
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center px-6">
+      <div className="max-w-4xl w-full text-center space-y-12">
+        <h1 className="text-6xl md:text-7xl font-black text-gray-900">
+          HVAC Flow Pro
+        </h1>
+        <p className="text-2xl md:text-3xl text-gray-700">
+          AI Diagnosis • Proposals • Compliance • Booking • Portal • QuickBooks • SMS
+        </p>
 
-                  {selectedTech === tech.id && (
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl z-10">
-                      <div className="font-bold mb-1" style={{ color: tech.color }}>{tech.name}</div>
-                      <div className="text-xs text-slate-400 mb-2">{tech.truck}</div>
-                      {tech.customer && (
-                        <div className="text-sm space-y-1">
-                          <div className="text-slate-200 font-medium">{tech.customer}</div>
-                          <div className="text-xs text-slate-400">{tech.currentJob}</div>
-                          <div className="text-xs text-slate-400">{tech.jobType}</div>
-                          {tech.eta && tech.eta > 0 && (
-                            <div className="text-xs text-blue-400 font-medium mt-2">ETA: {tech.eta} min</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        {/* LIVE COUNTER */}
+        <div className="bg-black text-white py-12 px-8 rounded-2xl">
+          {loading ? (
+            <p className="text-4xl">Loading...</p>
+          ) : soldOut ? (
+            <p className="text-6xl font-black">SOLD OUT FOREVER</p>
+          ) : (
+            <>
+              <p className="text-7xl font-black">{spotsLeft}</p>
+              <p className="text-3xl mt-4">Founding Spots Left</p>
+              <p className="text-xl mt-2 opacity-90">Lifetime Pro Access – $990/year forever</p>
+            </>
+          )}
+        </div>
 
-          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <div className="text-sm font-medium text-blue-300 mb-1">Live GPS Tracking</div>
-                <div className="text-xs text-blue-400/80">
-                  Real Edmonton map. Click any truck marker for details. Updates every 3 seconds.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+        {/* CHECKOUT BUTTON */}
+        {!soldOut && (
+          <button
+            onClick={handleCheckout}
+            className="w-full max-w-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-3xl py-8 rounded-2xl transition shadow-2xl"
+          >
+            Claim My Founding Spot Now
+          </button>
+        )}
 
-  const ScheduleView = () => (
-    <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Schedule View - Coming Soon</h2>
-    </div>
-  );
+        <p className="text-lg text-gray-600 mt-16">
+          First 50 only. Never available again at this price.
+        </p>
+      </div>
+    </main>
+  )
+}
+app/success/page.tsx
+tsx
+export default function SuccessPage() {
+  return (
+    <main className="min-h-screen bg-green-600 flex items-center justify-center">
+      <div className="text-center text-white">
+        <h1 className="text-6xl font-black mb-8">Welcome, Founding Member!</h1>
+        <p className="text-3xl">Check your email for your badge and next steps.</p>
+      </div>
+    </main>
+  )
+}
 
-  const InvoicesView = () => (
-    <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Invoices View - Coming Soon</h2>
-    </div>
-  );
+PART 4 of 9 – Stripe Checkout + Webhook + Atomic Slot Claim + Resend Email + Auto-Refund
+Create these exact folders/files:
+text
+├── app/
+│ └── api/
+│ ├── checkout/
+│ │ └── route.ts
+│ └── webhooks/
+│ └── stripe/
+│ └── route.ts
+app/api/checkout/route.ts
+(creates the Stripe Checkout session)
+TypeScript
+import { NextResponse } from 'next/server'
+import Stripe from 'stripe'
 
-  const RefrigerantView = () => (
-    <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Refrigerant View - Coming Soon</h2>
-    </div>
-  );
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-06-01',
+})
 
-  const CustomersView = () => (
-    <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Customers View - Coming Soon</h2>
-    </div>
-  );
+export async function POST() {
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'subscription',
+    line_items: [
+      {
+        price: process.env.STRIPE_FOUNDING_PRICE_ID,
+        quantity: 1,
+      },
+    ],
+    success_url: ${process.env.NEXTAUTH_URL || 'https://yourdomain.com'}/success,
+    cancel_url: ${process.env.NEXTAUTH_URL || 'https://yourdomain.com'},
+    metadata: {
+      type: 'founding_member',
+    },
+  })
 
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-slate-900/50 backdrop-blur border-b border-slate-800 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-white capitalize">{currentView}</h1>
-              {mounted && (
-                <div className="text-sm text-slate-400">
-                  {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  {' • '}
-                  {currentTime.toLocaleTimeString()}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 bg-green-500/20 border border-green-500/30 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-green-400">LIVE</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          {currentView === 'dashboard' && <DashboardView />}
-          {currentView === 'gps' && <GPSView />}
-          {currentView === 'schedule' && <ScheduleView />}
-          {currentView === 'invoices' && <InvoicesView />}
-          {currentView === 'refrigerant' && <RefrigerantView />}
-          {currentView === 'customers' && <CustomersView />}
-        </div>
-      </div>
-    </div>
-  );
-}    // Downtown Jasper Ave
-    position: { x: 50, y: 35 }
-  },
-  {
-    id: 3,
-    name: 'Steve Martinez',
-    truck: 'Truck #3',
-    phone: '(780) 555-0223',
-    status: 'en-route',
-    currentJob: '15234 Stony Plain Rd',
-    customer: 'West Ed Area Residence',
-    jobType: 'Installation - New Lennox',
-    eta: 15,
-    color: '#F59E0B',
-    // West Edmonton (Stony Plain Rd)
-    position: { x: 28, y: 42 }
-  },
-  {
-    id: 4,
-    name: 'Carlos Diaz',
-    truck: 'Truck #4',
-    phone: '(780) 555-0267',
-    status: 'available',
-    currentJob: 'Returning to shop',
-    customer: null,
-    jobType: 'Available for dispatch',
-    eta: null,
-    color: '#6B7280',
-    // North Central Edmonton
-    position: { x: 52, y: 28 }
-  },
-  {
-    id: 5,
-    name: 'James Wilson',
-    truck: 'Truck #5',
-    phone: '(780) 555-0291',
-    status: 'en-route',
-    currentJob: '7234 99 St NW',
-    customer: 'Strathcona Family',
-    jobType: 'Furnace Tune-up',
-    eta: 22,
-    color: '#8B5CF6',
-    // Strathcona area (99 St)
-    position: { x: 55, y: 52 }
-  }
-];
+  return NextResponse.json({ sessionId: session.id })
+}
+app/api/webhooks/stripe/route.ts
+(the bulletproof webhook – claims slot or refunds instantly)
+TypeScript
+import { buffer } from 'micro'
+import Stripe from 'stripe'
+import { Resend } from 'resend'
+import { createClient } from '@supabase/supabase-js'
 
-const JOBS = [
-  { id: 1, customer: 'Johnson Residence', address: '8423 Gateway Blvd', type: 'Emergency', tech: 'Mike Rodriguez', status: 'in-progress', value: 485, time: '10:30 AM' },
-  { id: 2, customer: 'Downtown Office', address: '10234 Jasper Ave', type: 'Maintenance', tech: 'Danny Chen', status: 'in-progress', value: 350, time: '9:00 AM' },
-  { id: 3, customer: 'Anderson Family', address: '5623 82 Ave', type: 'Installation', tech: 'Steve Martinez', status: 'scheduled', value: 4850, time: '2:00 PM' },
-  { id: 4, customer: 'Smith Commercial', address: '12045 104 St', type: 'Quote', tech: 'Unassigned', status: 'pending', value: 0, time: '3:30 PM' },
-  { id: 5, customer: 'Brown Residence', address: '9234 Calgary Trail', type: 'Repair', tech: 'James Wilson', status: 'in-progress', value: 325, time: '11:15 AM' },
-];
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-01' })
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+const resend = new Resend(process.env.RESEND_API_KEY!)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-export default function FlowPlatformDemo() {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [selectedTech, setSelectedTech] = useState<number | null>(null);
-  const [updates, setUpdates] = useState(0);
-  const [revenue, setRevenue] = useState(8450);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mounted, setMounted] = useState(false);
-  const [techPositions, setTechPositions] = useState<{[key: number]: {x: number, y: number}}>(
-    TECHS.reduce((acc, tech) => ({ ...acc, [tech.id]: tech.position }), {})
-  );
+export const config = { api: { bodyParser: false } }
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+export async function POST(req: Request) {
+  const buf = await buffer(req)
+  const sig = req.headers.get('stripe-signature')!
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTechPositions(prev => {
-        const newPositions = {...prev};
-        TECHS.forEach(tech => {
-          if (tech.status === 'en-route') {
-            const current = prev[tech.id];
-            newPositions[tech.id] = {
-              x: current.x + (Math.random() - 0.5) * 1.5,
-              y: current.y + (Math.random() - 0.5) * 1.5
-            };
-          }
-        });
-        return newPositions;
-      });
-      setUpdates(u => u + 1);
-      setRevenue(r => r + Math.floor(Math.random() * 20));
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  let event: Stripe.Event
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'en-route': return 'bg-blue-500';
-      case 'on-site': return 'bg-green-500';
-      case 'available': return 'bg-gray-500';
-      case 'in-progress': return 'bg-blue-500';
-      case 'scheduled': return 'bg-yellow-500';
-      case 'pending': return 'bg-orange-500';
-      default: return 'bg-gray-500';
-    }
-  };
+  try {
+    event = stripe.webhooks.constructEvent(buf.toString(), sig, webhookSecret)
+  } catch (err: any) {
+    console.error('Webhook signature failed:', err.message)
+    return new Response(Webhook Error: ${err.message}, { status: 400 })
+  }
 
-  const currentTime = new Date();
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as Stripe.Checkout.Session
+    const email = session.customer_details?.email!
+    const subscriptionId = session.subscription as string
 
-  const Sidebar = () => (
-    <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-slate-900 border-r border-slate-800 transition-all duration-300 flex flex-col`}>
-      <div className="p-4 border-b border-slate-800">
-        <div className="flex items-center justify-between">
-          {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Navigation className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div className="font-bold text-white">HVACflow</div>
-              </div>
-            </div>
-          )}
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-slate-400 hover:text-white">
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-      <nav className="flex-1 p-3 space-y-1">
-        {[
-          { id: 'dashboard', icon: Home, label: 'Dashboard' },
-          { id: 'gps', icon: MapPin, label: 'GPS Tracking' },
-          { id: 'schedule', icon: Calendar, label: 'Schedule' },
-          { id: 'invoices', icon: FileText, label: 'Invoices' },
-          { id: 'refrigerant', icon: Droplets, label: 'Refrigerant' },
-          { id: 'customers', icon: Users, label: 'Customers' },
-        ].map(item => (
-          <button
-            key={item.id}
-            onClick={() => setCurrentView(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-              currentView === item.id
-                ? 'bg-blue-500 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <item.icon className="w-5 h-5" />
-            {sidebarOpen && <span className="font-medium">{item.label}</span>}
-          </button>
-        ))}
-      </nav>
-    </div>
-  );
+    // Atomic slot claim via RPC
+    const { data: slot, error } = await supabase.rpc('claim_founding_slot', {
+      p_email: email,
+      p_stripe_sub_id: subscriptionId,
+    })
 
-  const DashboardView = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">Today's Revenue</span>
-            <DollarSign className="w-5 h-5 text-green-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">${revenue.toLocaleString()}</div>
-          <div className="text-sm text-green-400 mt-1">+12.5% from yesterday</div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">Active Jobs</span>
-            <Activity className="w-5 h-5 text-blue-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">8</div>
-          <div className="text-sm text-slate-400 mt-1">3 in progress, 5 scheduled</div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">Jobs Completed</span>
-            <CheckCircle className="w-5 h-5 text-purple-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">12</div>
-          <div className="text-sm text-purple-400 mt-1">+3 since 9 AM</div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">GPS Updates</span>
-            <TrendingUp className="w-5 h-5 text-orange-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">{updates}</div>
-          <div className="text-sm text-slate-400 mt-1">Every 3 seconds</div>
-        </div>
-      </div>
-      <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-6">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Activity className="w-5 h-5 text-blue-400" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-white mb-2">AI Insight</h3>
-            <p className="text-slate-300 mb-3">
-              Found 8 customers due for seasonal maintenance. Automated reminders sent. 
-              3 already booked appointments. Potential revenue: <span className="text-green-400 font-semibold">$2,850</span>
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Technicians</h3>
-          <div className="space-y-3">
-            {TECHS.map(tech => (
-              <div key={tech.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: tech.color + '20' }}>
-                    <Truck className="w-5 h-5" style={{ color: tech.color }} />
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">{tech.name}</div>
-                    <div className="text-xs text-slate-400">{tech.truck}</div>
-                  </div>
-                </div>
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tech.status)} text-white`}>
-                  {tech.status === 'en-route' ? 'En Route' : tech.status === 'on-site' ? 'On Site' : 'Available'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Today's Schedule</h3>
-          <div className="space-y-3">
-            {JOBS.slice(0, 5).map(job => (
-              <div key={job.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div className="flex-1">
-                  <div className="font-medium text-white">{job.customer}</div>
-                  <div className="text-xs text-slate-400">{job.address}</div>
-                  <div className="text-xs text-slate-500 mt-1">{job.time} • {job.tech}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-white">${job.value}</div>
-                  <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(job.status)} text-white mt-1`}>
-                    {job.status}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    if (error || slot === -1) {
+      // Sold out → refund immediately
+      const paymentIntent = session.payment_intent as string
+      await stripe.refunds.create({ payment_intent: paymentIntent })
+      console.log(Refunded sold-out purchase for ${email})
+      return new Response('Sold out – refunded', { status: 200 })
+    }
 
-  const GPSView = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-1 space-y-4">
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-4">
-          <h2 className="text-lg font-semibold text-white mb-4">Active Technicians</h2>
-          <div className="space-y-3">
-            {TECHS.map(tech => (
-              <div
-                key={tech.id}
-                onClick={() => setSelectedTech(selectedTech === tech.id ? null : tech.id)}
-                className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                  selectedTech === tech.id
-                    ? 'bg-slate-700/50 border-blue-500 shadow-lg'
-                    : 'bg-slate-800/30 border-slate-700 hover:bg-slate-700/30'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: tech.color + '20' }}>
-                      <Truck className="w-5 h-5" style={{ color: tech.color }} />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-white">{tech.name}</div>
-                      <div className="text-xs text-slate-400">{tech.truck}</div>
-                    </div>
-                  </div>
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tech.status)} text-white`}>
-                    {tech.status === 'en-route' ? 'En Route' : tech.status === 'on-site' ? 'On Site' : 'Available'}
-                  </div>
-                </div>
-                {tech.customer && (
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
-                      <div className="text-sm">
-                        <div className="text-slate-300">{tech.customer}</div>
-                        <div className="text-slate-500 text-xs">{tech.currentJob}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-slate-400" />
-                      <div className="text-sm text-slate-400">{tech.jobType}</div>
-                    </div>
-                    {tech.eta && tech.eta > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-blue-400" />
-                        <div className="text-sm text-blue-400 font-medium">ETA: {tech.eta} minutes</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    // Send welcome email + badge
+    await resend.emails.send({
+      from: 'Founding Member <founding@hvacflowpro.com>',
+      to: email,
+      subject: You're Founding Member #${slot}! 🚀,
+      html: \ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<h1>Congratulations – You're In!</h1>\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<p>You are officially Founding Member #${slot} of HVAC Flow Pro.</p>\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<p>Lifetime Pro access at $990/year – forever.</p>\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div style="text-align:center;margin:40px 0;">\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://via.placeholder.com/600x300/0066ff/ffffff?text=Founding+Member+%23${slot}" alt="Badge" />\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<p>Dashboard coming in 72 hours. Watch your email.</p>\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<p>Thank you for believing in the vision.</p>\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,
+    })
+  }
 
-      <div className="lg:col-span-2">
-        <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6 h-[700px]">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Live Map - Edmonton, AB</h2>
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              Updates every 3 seconds
-            </div>
-          </div>
-          
-          {/* Real Map with OpenStreetMap tiles */}
-          <div 
-            className="w-full h-[600px] rounded-lg overflow-hidden relative"
-            style={{ 
-              backgroundImage: 'url(https://tile.openstreetmap.org/12/714/1450.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundColor: '#1e293b'
-            }}
-          >
-            {/* Animated truck markers */}
-            {TECHS.map(tech => {
-              const pos = techPositions[tech.id];
-              return (
-                <div
-                  key={tech.id}
-                  className="absolute transition-all duration-[3000ms] ease-linear cursor-pointer group"
-                  style={{
-                    left: `${pos.x}%`,
-                    top: `${pos.y}%`,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                  onClick={() => setSelectedTech(selectedTech === tech.id ? null : tech.id)}
-                >
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
-                    style={{
-                      backgroundColor: tech.color + '30',
-                      border: `3px solid ${tech.color}`
-                    }}
-                  >
-                    <Truck className="w-6 h-6" style={{ color: tech.color }} />
-                  </div>
+  return new Response('OK', { status: 200 })
+}
+Create these folders/files:
+text
+├── app/
+│ └── dashboard/
+│ ├── page.tsx ← Main dashboard
+│ └── diagnose/
+│ └── page.tsx ← AI Diagnosis tool (voice + photo)
+└── components/
+    └── DiagnosisResult.tsx
+app/dashboard/page.tsx – The real contractor dashboard
+tsx
+import Link from 'next/link'
 
-                  {selectedTech === tech.id && (
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl z-10">
-                      <div className="font-bold mb-1" style={{ color: tech.color }}>{tech.name}</div>
-                      <div className="text-xs text-slate-400 mb-2">{tech.truck}</div>
-                      {tech.customer && (
-                        <div className="text-sm space-y-1">
-                          <div className="text-slate-200 font-medium">{tech.customer}</div>
-                          <div className="text-xs text-slate-400">{tech.currentJob}</div>
-                          <div className="text-xs text-slate-400">{tech.jobType}</div>
-                          {tech.eta && tech.eta > 0 && (
-                            <div className="text-xs text-blue-400 font-medium mt-2">ETA: {tech.eta} min</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+export default function Dashboard() {
+  return (
+    <main className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-5xl font-black mb-8">Contractor Dashboard</h1>
+       
+        <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <div className="bg-white p-8 rounded-2xl shadow-lg">
+            <h2 className="text-3xl font-bold text-green-600">Founding Member</h2>
+            <p className="text-5xl font-black mt-4">#12</p>
+            <p className="text-gray-600 mt-2">Lifetime Pro Access</p>
+          </div>
 
-          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <div className="text-sm font-medium text-blue-300 mb-1">Live GPS Tracking</div>
-                <div className="text-xs text-blue-400/80">
-                  Real Edmonton map. Click any truck marker for details. Updates every 3 seconds.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+          <div className="bg-white p-8 rounded-2xl shadow-lg">
+            <h2 className="text-3xl font-bold">Today's Leads</h2>
+            <p className="text-5xl font-black mt-4">7</p>
+          </div>
 
-  const ScheduleView = () => (
-    <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Schedule View - Coming Soon</h2>
-    </div>
-  );
+          <div className="bg-white p-8 rounded-2xl shadow-lg">
+            <h2 className="text-3xl font-bold">Revenue This Month</h2>
+            <p className="text-5xl font-black mt-4">$18,400</p>
+          </div>
+        </div>
 
-  const InvoicesView = () => (
-    <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Invoices View - Coming Soon</h2>
-    </div>
-  );
+        <div className="grid md:grid-cols-2 gap-8">
+          <Link href="/dashboard/diagnose" className="block">
+            <div className="bg-gradient-to-br from-blue-600 to-purple-700 text-white p-12 rounded-3xl text-center hover:scale-105 transition">
+              <h3 className="text-4xl font-black">AI Diagnosis Tool</h3>
+              <p className="text-xl mt-4">Voice + Photo → Instant Answer</p>
+            </div>
+          </Link>
 
-  const RefrigerantView = () => (
-    <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Refrigerant View - Coming Soon</h2>
-    </div>
-  );
+          <div className="bg-gradient-to-br from-green-600 to-teal-700 text-white p-12 rounded-3xl text-center">
+            <h3 className="text-4xl font-black">Good/Better/Best Proposals</h3>
+            <p className="text-xl mt-4">Coming in 48 hours</p>
+          </div>
+        </div>
 
-  const CustomersView = () => (
-    <div className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Customers View - Coming Soon</h2>
-    </div>
-  );
+        <div className="mt-12 text-center text-gray-600">
+          <p className="text-2xl">More tools dropping daily. You’re in early.</p>
+        </div>
+      </div>
+    </main>
+  )
+}
+app/dashboard/diagnose/page.tsx – Real working AI diagnosis (voice + photo)
+tsx
+'use client'
 
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-slate-900/50 backdrop-blur border-b border-slate-800 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-white capitalize">{currentView}</h1>
-              {mounted && (
-                <div className="text-sm text-slate-400">
-                  {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  {' • '}
-                  {currentTime.toLocaleTimeString()}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 bg-green-500/20 border border-green-500/30 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-green-400">LIVE</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          {currentView === 'dashboard' && <DashboardView />}
-          {currentView === 'gps' && <GPSView />}
-          {currentView === 'schedule' && <ScheduleView />}
-          {currentView === 'invoices' && <InvoicesView />}
-          {currentView === 'refrigerant' && <RefrigerantView />}
-          {currentView === 'customers' && <CustomersView />}
-        </div>
-      </div>
-    </div>
-  );
+import { useState } from 'react'
+
+export default function Diagnose() {
+  const [photo, setPhoto] = useState<string | null>(null)
+  const [issue, setIssue] = useState('')
+  const [diagnosis, setDiagnosis] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => setPhoto(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const runDiagnosis = async () => {
+    setLoading(true)
+    const res = await fetch('/api/diagnose', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issue, photo }),
+    })
+    const data = await res.json()
+    setDiagnosis(data.result)
+    setLoading(false)
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-5xl font-black mb-12 text-center">AI Diagnosis Tool</h1>
+
+        <div className="bg-white rounded-3xl shadow-2xl p-12">
+          <textarea
+            placeholder="Describe the problem (e.g., AC blowing warm, rattling noise from outdoor unit)"
+            className="w-full h-32 p-6 border-2 border-gray-300 rounded-xl text-lg"
+            value={issue}
+            onChange={(e) => setIssue(e.target.value)}
+          />
+
+          <div className="mt-8">
+            <label className="block">
+              <div className="bg-blue-600 text-white py-6 rounded-xl text-center text-2xl cursor-pointer hover:bg-blue-700">
+                📸 Upload Photo of Unit / Error Code
+              </div>
+              <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+            </label>
+            {photo && <img src={photo} alt="Unit" className="mt-6 rounded-xl shadow-lg max-h-96 mx-auto" />}
+          </div>
+
+          <button
+            onClick={runDiagnosis}
+            disabled={loading || (!issue && !photo)}
+            className="mt-12 w-full bg-black text-white py-8 rounded-xl text-3xl font-bold hover:bg-gray-900 disabled:opacity-50"
+          >
+            {loading ? 'Analyzing with Grok-4...' : 'Get Instant Diagnosis'}
+          </button>
+
+          {diagnosis && (
+            <div className="mt-12 bg-green-50 border-4 border-green-600 rounded-2xl p-10">
+              <h2 className="text-4xl font-black text-green-800 mb-6">Diagnosis Complete</h2>
+              <p className="text-2xl whitespace-pre-wrap text-gray-800">{diagnosis}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  )
 }
